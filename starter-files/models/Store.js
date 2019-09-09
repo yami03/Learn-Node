@@ -39,12 +39,18 @@ const storeSchema = new mongoose.Schema({
 });
 
 // 여기서는 arrow function을 쓰지 않는다.
-storeSchema.pre('save', function(next) {
+storeSchema.pre('save', async function(next) {
   if (!this.isModified('name')) {
     next(); // skip it
     return; // stop this function from runnig
   }
   this.slug = slug(this.name);
+  // find other stores that have a slug of wes, wes-1, wes-2
+  const slugRegEx = new RegExp(`^(${this.slug})((-[0-9]*$)?)$`, 'i');
+  const storesWithSlug = await this.constructor.find({ slug: slugRegEx });
+  if(storesWithSlug) {
+    this.slug = `${this.slug}-${storesWithSlug.length + 1}`;
+  }
   next();
   // TODO make more resilient so slugs are unique
 });
